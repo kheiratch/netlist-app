@@ -5,63 +5,56 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NETLIST - Vos listes, vos profils</title>
 
-  <!-- Tailwind CSS CDN -->
+  <!-- Tailwind CSS & React CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- React & ReactDOM CDN -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <!-- Babel Standalone pour compiler JSX en direct -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <!-- FontAwesome 6 CDN -->
+  
+  <!-- FontAwesome & Police Inter -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <style>
     body {
-      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: 'Inter', sans-serif;
       background-color: #060911;
       color: #e2e8f0;
-      min-height: 100vh;
-      overflow-x: hidden;
     }
-    .custom-scroll::-webkit-scrollbar {
+    .custom-scrollbar::-webkit-scrollbar {
       width: 6px;
       height: 6px;
     }
-    .custom-scroll::-webkit-scrollbar-track {
-      background: #090e1a;
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #080d1a;
     }
-    .custom-scroll::-webkit-scrollbar-thumb {
+    .custom-scrollbar::-webkit-scrollbar-thumb {
       background: #1e293b;
       border-radius: 9999px;
     }
-    .custom-scroll::-webkit-scrollbar-thumb:hover {
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
       background: #334155;
-    }
-    .neon-logo-glow {
-      box-shadow: 0 0 16px rgba(56, 189, 248, 0.35);
     }
   </style>
 </head>
-<body class="custom-scroll selection:bg-sky-500 selection:text-slate-950">
+<body class="custom-scrollbar selection:bg-blue-600 selection:text-white min-h-screen flex flex-col">
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect, useMemo, useRef } = React;
+    const { useState, useEffect, useMemo } = React;
 
     const TMDB_API_KEY = "d9cfe0d6babb39d719fc44ddbd935727";
     const TMDB_BASE_URL = "https://api.themoviedb.org/3";
     const TMDB_IMG_URL = "https://image.tmdb.org/t/p/w500";
 
-    const INITIAL_PROFILES = [
-      { id: "p1", name: "Kero", avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80" },
-      { id: "p2", name: "Kero Bot", avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=Kero" }
+    const DEFAULT_PROFILES = [
+      { id: "1", name: "Kero", avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=Kero" }
     ];
 
-    const INITIAL_WORKS = [
+    const DEFAULT_WORKS = [
       {
-        id: "w_dune2",
-        profileId: "p1",
+        id: "w1",
+        profileId: "1",
         tmdbId: 693134,
         title: "Dune : Deuxième Partie",
         category: "Films",
@@ -69,181 +62,240 @@
         year: "2024",
         releaseDate: "2024-02-28",
         poster: "https://image.tmdb.org/t/p/w500/8b8R8l88Qje9dn9OE8PY05Nxl1X.jpg",
-        genres: ["Science-Fiction", "Aventure"],
         synopsis: "Paul Atreides s'unit à Chani et aux Fremen pour mener la révolte contre ceux qui ont anéanti sa famille.",
         rating: 9.2,
-        tmdbRating: 8.3,
-        detailedRating: { scenario: 9, visual: 10, sound: 10, acting: 9, emotion: 8 },
-        providers: ["Canal+", "Apple TV", "Prime Video"],
+        tmdbRating: 8.2,
+        detailedRating: { scenario: 9, visual: 10, sound: 9, acting: 9, emotion: 9 },
+        providers: ["Canal+", "Apple TV"],
         createdAt: 1710000000000
+      },
+      {
+        id: "w2",
+        profileId: "1",
+        tmdbId: 46260,
+        title: "Naruto (2002)",
+        category: "Animés",
+        status: "Terminé",
+        year: "2002",
+        releaseDate: "2002-10-03",
+        poster: "https://image.tmdb.org/t/p/w500/vauCO83s14p4eM19g46rG35m1gX.jpg",
+        synopsis: "Dans le village de Konoha vit Naruto, un jeune garçon détesté et craint des villageois...",
+        rating: 8.4,
+        tmdbRating: 8.4,
+        detailedRating: { scenario: 8, visual: 8, sound: 8, acting: 8, emotion: 8 },
+        providers: ["Netflix", "Prime Video", "ADN"],
+        mangaTracking: true,
+        mangaChapter: 245,
+        currentSeason: 1,
+        currentEpisode: 1,
+        createdAt: 1709000000000
       }
     ];
 
     function App() {
+      // Profils
       const [profiles, setProfiles] = useState(() => {
         const saved = localStorage.getItem("netlist_profiles");
-        return saved ? JSON.parse(saved) : INITIAL_PROFILES;
+        return saved ? JSON.parse(saved) : DEFAULT_PROFILES;
       });
-      const [activeProfileId, setActiveProfileId] = useState(() => {
-        return localStorage.getItem("netlist_active_pid") || "p1";
+      const [currentProfileId, setCurrentProfileId] = useState(() => {
+        return localStorage.getItem("netlist_active_profile") || "1";
       });
+      const [showProfileMenu, setShowProfileMenu] = useState(false);
+
+      // Œuvres
       const [works, setWorks] = useState(() => {
         const saved = localStorage.getItem("netlist_works");
-        return saved ? JSON.parse(saved) : INITIAL_WORKS;
-      });
-      const [chatMessages, setChatMessages] = useState(() => {
-        const saved = localStorage.getItem("netlist_chat_history");
-        return saved ? JSON.parse(saved) : [
-          { id: "m1", senderId: "p1", senderName: "Kero", text: "Bienvenue sur NETLIST !", time: "14:20" }
-        ];
+        return saved ? JSON.parse(saved) : DEFAULT_WORKS;
       });
 
-      // Filter and search controls
-      const [activeCategory, setActiveCategory] = useState("Toutes");
+      // Filtres, Tri et Navigation
+      const [activeCategory, setActiveCategory] = useState("Toutes"); // 'Toutes', 'Films', 'Séries', 'Animés', 'Recommandations'
       const [statusFilter, setStatusFilter] = useState("Tous les statuts");
       const [sortBy, setSortBy] = useState("date_desc");
-      const [localFilterText, setLocalFilterText] = useState("");
+      const [searchQuery, setSearchQuery] = useState("");
 
-      // Autocomplete search bar
-      const [quickSearch, setQuickSearch] = useState("");
-      const [quickSuggestions, setQuickSuggestions] = useState([]);
-      const [loadingSearch, setLoadingSearch] = useState(false);
-
-      // UI Modals and toggles
-      const [showProfileDropdown, setShowProfileDropdown] = useState(false);
-      const [selectedWorkModal, setSelectedWorkModal] = useState(null);
-      const [showChatModal, setShowChatModal] = useState(false);
-
-      // Multi-select actions
+      // Mode sélection groupée
       const [isSelectMode, setIsSelectMode] = useState(false);
       const [selectedIds, setSelectedIds] = useState([]);
 
-      const profileDropdownRef = useRef(null);
+      // Recherche & Autocomplétion TMDB rapide
+      const [quickSearchInput, setQuickSearchInput] = useState("");
+      const [quickResults, setQuickResults] = useState([]);
+      const [isSearching, setIsSearching] = useState(false);
 
-      // Sync to localStorage
+      // Recommandations dynamiques TMDB
+      const [recommendations, setRecommendations] = useState([]);
+      const [isLoadingRecs, setIsLoadingRecs] = useState(false);
+
+      // Modales
+      const [showDetailModal, setShowDetailModal] = useState(null);
+      const [showChatModal, setShowChatModal] = useState(false);
+
+      // Messages de chat
+      const [chatMessages, setChatMessages] = useState(() => {
+        const saved = localStorage.getItem("netlist_chat");
+        return saved ? JSON.parse(saved) : [
+          { id: "m1", senderId: "1", senderName: "Kero", text: "Bienvenue sur NETLIST !", timestamp: Date.now() }
+        ];
+      });
+
+      // Sauvegardes
       useEffect(() => {
         localStorage.setItem("netlist_profiles", JSON.stringify(profiles));
       }, [profiles]);
       useEffect(() => {
-        localStorage.setItem("netlist_active_pid", activeProfileId);
-      }, [activeProfileId]);
-      useEffect(() => {
         localStorage.setItem("netlist_works", JSON.stringify(works));
       }, [works]);
       useEffect(() => {
-        localStorage.setItem("netlist_chat_history", JSON.stringify(chatMessages));
+        localStorage.setItem("netlist_active_profile", currentProfileId);
+      }, [currentProfileId]);
+      useEffect(() => {
+        localStorage.setItem("netlist_chat", JSON.stringify(chatMessages));
       }, [chatMessages]);
 
-      // Close profile dropdown on outside click
-      useEffect(() => {
-        function handleClickOutside(event) {
-          if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target)) {
-            setShowProfileDropdown(false);
-          }
-        }
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-      }, []);
+      const currentProfile = useMemo(() => {
+        return profiles.find(p => p.id === currentProfileId) || profiles[0];
+      }, [profiles, currentProfileId]);
 
-      const activeProfile = useMemo(() => {
-        return profiles.find(p => p.id === activeProfileId) || profiles[0];
-      }, [profiles, activeProfileId]);
-
-      useEffect(() => {
-        if (!quickSearch.trim()) {
-          setQuickSuggestions([]);
-          return;
-        }
-        const timer = setTimeout(async () => {
-          setLoadingSearch(true);
-          try {
-            const res = await fetch(`${TMDB_BASE_URL}/search/multi?api_key=${TMDB_API_KEY}&language=fr-FR&query=${encodeURIComponent(quickSearch)}&include_adult=false`);
-            const data = await res.json();
-            const items = (data.results || []).filter(item => item.media_type === "movie" || item.media_type === "tv");
-            setQuickSuggestions(items.slice(0, 6));
-          } catch (err) {
-            console.error("TMDB error:", err);
-          } finally {
-            setLoadingSearch(false);
-          }
-        }, 280);
-        return () => clearTimeout(timer);
-      }, [quickSearch]);
-
-      const handleAddTmdbWork = async (item) => {
-        setQuickSuggestions([]);
-        setQuickSearch("");
-
-        const isTv = item.media_type === "tv";
-        const title = isTv ? (item.name || item.original_name) : (item.title || item.original_title);
-        const releaseDate = isTv ? (item.first_air_date || "2024-01-01") : (item.release_date || "2024-01-01");
-        const year = releaseDate.split("-")[0] || "";
-        const poster = item.poster_path ? `${TMDB_IMG_URL}${item.poster_path}` : "";
-
-        // Check if Japanese anime
-        const isAnime = isTv && (item.original_language === "ja" || (item.genre_ids && item.genre_ids.includes(16)));
-
-        let providers = [];
-        try {
-          const provRes = await fetch(`${TMDB_BASE_URL}/${isTv ? 'tv' : 'movie'}/${item.id}/watch/providers?api_key=${TMDB_API_KEY}`);
-          const provData = await provRes.json();
-          if (provData.results?.FR?.flatrate) {
-            providers = provData.results.FR.flatrate.map(p => p.provider_name);
-          }
-        } catch (e) {
-          console.warn("Watch providers:", e);
-        }
-
-        const newWork = {
-          id: "w_" + Date.now(),
-          profileId: activeProfileId,
-          tmdbId: item.id,
-          title: `${title}`,
-          category: isTv ? (isAnime ? "Animés" : "Séries") : "Films",
-          status: "À voir / lire",
-          year: year || "2024",
-          releaseDate: releaseDate,
-          poster: poster,
-          synopsis: item.overview || "Aucun synopsis disponible.",
-          rating: item.vote_average ? parseFloat(item.vote_average.toFixed(1)) : 8.0,
-          tmdbRating: item.vote_average ? parseFloat(item.vote_average.toFixed(1)) : 8.0,
-          currentSeason: 1,
-          currentEpisode: 1,
-          mangaTracking: false,
-          mangaChapter: 1,
-          providers: providers.length > 0 ? providers : ["Non spécifié / VOD"],
-          detailedRating: { scenario: 8, visual: 8, sound: 8, acting: 8, emotion: 8 },
-          createdAt: Date.now()
-        };
-
-        setWorks(prev => [newWork, ...prev]);
-        setSelectedWorkModal(newWork);
-      };
-
-      const userWorks = useMemo(() => {
-        return works.filter(w => w.profileId === activeProfileId);
-      }, [works, activeProfileId]);
-
+      // Compteurs d'onglets
       const counts = useMemo(() => {
+        const userWorks = works.filter(w => w.profileId === currentProfileId);
         return {
           total: userWorks.length,
           films: userWorks.filter(w => w.category === "Films").length,
           series: userWorks.filter(w => w.category === "Séries").length,
           animes: userWorks.filter(w => w.category === "Animés").length,
         };
-      }, [userWorks]);
+      }, [works, currentProfileId]);
 
-      const filteredWorks = useMemo(() => {
-        let list = [...userWorks];
+      // Chargement automatique des Recommandations TMDB quand on clique sur l'onglet
+      useEffect(() => {
+        if (activeCategory === "Recommandations") {
+          setIsLoadingRecs(true);
+          const userWorks = works.filter(w => w.profileId === currentProfileId && w.tmdbId);
+          
+          // On prend le film ou la série avec la plus haute note
+          const bestWork = userWorks.sort((a,b) => (b.rating || 8) - (a.rating || 8))[0];
 
-        if (activeCategory !== "Toutes") {
+          const endpoint = bestWork 
+            ? `${TMDB_BASE_URL}/${bestWork.category === 'Films' ? 'movie' : 'tv'}/${bestWork.tmdbId}/recommendations?api_key=${TMDB_API_KEY}&language=fr-FR`
+            : `${TMDB_BASE_URL}/trending/all/week?api_key=${TMDB_API_KEY}&language=fr-FR`;
+
+          fetch(endpoint)
+            .then(res => res.json())
+            .then(data => {
+              const recs = (data.results || []).filter(item => item.poster_path && (item.title || item.name));
+              setRecommendations(recs.slice(0, 18));
+            })
+            .catch(err => console.error("Erreur recommandations:", err))
+            .finally(() => setIsLoadingRecs(false));
+        }
+      }, [activeCategory, works, currentProfileId]);
+
+      // Recherche en direct TMDB dans le champ du header
+      useEffect(() => {
+        if (!quickSearchInput.trim()) {
+          setQuickResults([]);
+          return;
+        }
+        const timer = setTimeout(async () => {
+          setIsSearching(true);
+          try {
+            const res = await fetch(`${TMDB_BASE_URL}/search/multi?api_key=${TMDB_API_KEY}&language=fr-FR&query=${encodeURIComponent(quickSearchInput)}&include_adult=false`);
+            const data = await res.json();
+            const items = (data.results || []).filter(item => item.media_type === "movie" || item.media_type === "tv");
+            setQuickResults(items.slice(0, 7));
+          } catch (err) {
+            console.error("Erreur TMDB:", err);
+          } finally {
+            setIsSearching(false);
+          }
+        }, 300);
+        return () => clearTimeout(timer);
+      }, [quickSearchInput]);
+
+      // Fonction d'ajout d'une œuvre (depuis la barre ou les recommandations)
+      const handleAddFromTmdb = async (tmdbItem) => {
+        setQuickResults([]);
+        setQuickSearchInput("");
+
+        const isTv = tmdbItem.media_type === "tv" || (!tmdbItem.title && !!tmdbItem.name);
+        const title = isTv ? (tmdbItem.name || tmdbItem.original_name) : (tmdbItem.title || tmdbItem.original_title);
+        const releaseDate = isTv ? tmdbItem.first_air_date : tmdbItem.release_date;
+        const year = (releaseDate || "").split("-")[0] || "";
+        const poster = tmdbItem.poster_path ? `${TMDB_IMG_URL}${tmdbItem.poster_path}` : "";
+
+        let providersList = [];
+        try {
+          const provRes = await fetch(`${TMDB_BASE_URL}/${isTv ? 'tv' : 'movie'}/${tmdbItem.id}/watch/providers?api_key=${TMDB_API_KEY}`);
+          const provData = await provRes.json();
+          if (provData.results?.FR?.flatrate) {
+            providersList = provData.results.FR.flatrate.map(p => p.provider_name);
+          }
+        } catch (e) {}
+
+        const isAnime = isTv && (tmdbItem.original_language === "ja" || (tmdbItem.genre_ids && tmdbItem.genre_ids.includes(16)));
+
+        const newWork = {
+          id: "w_" + Date.now(),
+          profileId: currentProfileId,
+          tmdbId: tmdbItem.id,
+          title: `${title} (${year})`,
+          category: isTv ? (isAnime ? "Animés" : "Séries") : "Films",
+          status: "À voir / lire",
+          year,
+          releaseDate: releaseDate || "2024-01-01",
+          poster,
+          synopsis: tmdbItem.overview || "Aucun synopsis disponible.",
+          rating: tmdbItem.vote_average ? parseFloat(tmdbItem.vote_average.toFixed(1)) : 8.0,
+          tmdbRating: tmdbItem.vote_average ? parseFloat(tmdbItem.vote_average.toFixed(1)) : 8.0,
+          currentSeason: 1,
+          currentEpisode: 1,
+          mangaTracking: false,
+          mangaChapter: 1,
+          providers: providersList.length > 0 ? providersList : ["Non spécifié / VOD"],
+          detailedRating: { scenario: 8, visual: 8, sound: 8, acting: 8, emotion: 8 },
+          createdAt: Date.now()
+        };
+
+        setWorks(prev => [newWork, ...prev]);
+        setShowDetailModal(newWork);
+        if (activeCategory === "Recommandations") {
+          setActiveCategory("Toutes");
+        }
+      };
+
+      // Changement de photo de profil
+      const handleChangeAvatar = () => {
+        const choice = prompt("Collez l'URL de votre photo de profil (ou tapez un mot pour générer un avatar) :", currentProfile.avatar);
+        if (choice && choice.trim()) {
+          const finalUrl = choice.startsWith("http") ? choice.trim() : `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(choice.trim())}`;
+          setProfiles(prev => prev.map(p => p.id === currentProfileId ? { ...p, avatar: finalUrl } : p));
+        }
+      };
+
+      // Suppression directe depuis l'affiche
+      const handleDeleteWork = (e, workId) => {
+        e.stopPropagation();
+        if (confirm("Supprimer cette œuvre de votre liste ?")) {
+          setWorks(prev => prev.filter(w => w.id !== workId));
+          setSelectedIds(prev => prev.filter(id => id !== workId));
+        }
+      };
+
+      // Sélection / Tri des œuvres
+      const displayedWorks = useMemo(() => {
+        let list = works.filter(w => w.profileId === currentProfileId);
+
+        if (activeCategory !== "Toutes" && activeCategory !== "Recommandations") {
           list = list.filter(w => w.category === activeCategory);
         }
         if (statusFilter !== "Tous les statuts") {
           list = list.filter(w => w.status === statusFilter);
         }
-        if (localFilterText.trim()) {
-          const q = localFilterText.toLowerCase();
+        if (searchQuery.trim()) {
+          const q = searchQuery.toLowerCase();
           list = list.filter(w => w.title.toLowerCase().includes(q));
         }
 
@@ -255,80 +307,57 @@
           if (sortBy === "title_asc") return a.title.localeCompare(b.title);
           return 0;
         });
-      }, [userWorks, activeCategory, statusFilter, localFilterText, sortBy]);
-
-      // Direct single delete from card trash button
-      const handleDirectDelete = (e, workId) => {
-        e.stopPropagation();
-        setWorks(prev => prev.filter(w => w.id !== workId));
-        setSelectedIds(prev => prev.filter(id => id !== workId));
-      };
-
-      // Multi-select bulk actions
-      const handleToggleSelectAll = () => {
-        if (selectedIds.length === filteredWorks.length) {
-          setSelectedIds([]);
-        } else {
-          setSelectedIds(filteredWorks.map(w => w.id));
-        }
-      };
-
-      const handleBulkDelete = () => {
-        setWorks(prev => prev.filter(w => !selectedIds.includes(w.id)));
-        setSelectedIds([]);
-        setIsSelectMode(false);
-      };
+      }, [works, currentProfileId, activeCategory, statusFilter, searchQuery, sortBy]);
 
       return (
-        <div className="min-h-screen bg-[#070b13] text-slate-100 flex flex-col font-sans">
-          
-          {/* HEADER EXACT - NAVY DARK & NEON LOGO */}
-          <header className="sticky top-0 z-40 bg-[#080d18]/95 backdrop-blur-md border-b border-slate-800/80 px-4 md:px-8 py-3">
+        <div className="min-h-screen bg-[#060911] text-slate-200 flex flex-col">
+          {/* HEADER AVEC LOGO BASE44 ET BARRE ÉCLAIR */}
+          <header className="sticky top-0 z-40 bg-[#080d18]/95 backdrop-blur-md border-b border-slate-800/80 px-4 md:px-8 py-3.5">
             <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
               
-              {/* LOGO EXACT BASE44 (Cercle néon bleu avec 3 barres) */}
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full border border-sky-400/80 bg-[#081224] flex items-center justify-center neon-logo-glow flex-shrink-0">
-                  <div className="flex items-center justify-center gap-[3px]">
-                    <div className="w-[3px] h-3.5 bg-sky-400 rounded-full"></div>
-                    <div className="w-[3px] h-5 bg-sky-400 rounded-full"></div>
-                    <div className="w-[3px] h-3.5 bg-sky-400 rounded-full"></div>
-                  </div>
+              {/* Logo officiel NETLIST Base44 */}
+              <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActiveCategory("Toutes")}>
+                <div className="w-10 h-10 rounded-2xl bg-sky-500/10 border border-sky-400/40 p-1.5 flex items-center justify-center shadow-lg shadow-sky-500/20">
+                  <svg className="w-6 h-6 text-sky-400" viewBox="0 0 24 24" fill="currentColor">
+                    <rect x="4.5" y="8" width="3" height="8" rx="1.5" />
+                    <rect x="10.5" y="5" width="3" height="14" rx="1.5" />
+                    <rect x="16.5" y="7" width="3" height="10" rx="1.5" />
+                  </svg>
                 </div>
                 <div>
-                  <h1 className="font-extrabold text-lg tracking-wider text-white leading-none">NETLIST</h1>
-                  <p className="text-[11px] text-slate-400 font-medium tracking-normal mt-0.5">Vos listes, vos profils</p>
+                  <h1 className="font-black text-xl tracking-wider text-white leading-none">NETLIST</h1>
+                  <p className="text-[11px] text-slate-400 font-medium tracking-wide mt-0.5">Vos listes, vos profils</p>
                 </div>
               </div>
 
-              {/* SEARCH INPUT BAR WITH YELLOW BOLT */}
+              {/* Barre de recherche avec éclair jaune */}
               <div className="flex-1 max-w-xl relative">
                 <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-amber-400 text-xs">⚡</span>
+                  <i className="fa-solid fa-bolt absolute left-3.5 top-1/2 -translate-y-1/2 text-amber-400 text-xs"></i>
                   <input
                     type="text"
-                    value={quickSearch}
-                    onChange={(e) => setQuickSearch(e.target.value)}
+                    value={quickSearchInput}
+                    onChange={(e) => setQuickSearchInput(e.target.value)}
                     placeholder="Ajouter rapidement un film, série, animé..."
-                    className="w-full bg-[#0c1220] border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs md:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500 transition shadow-inner"
+                    className="w-full bg-[#0d1424] border border-slate-800 text-sm rounded-xl pl-9 pr-4 py-2.5 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500 transition shadow-inner"
                   />
-                  {loadingSearch && (
-                    <i className="fa-solid fa-spinner fa-spin absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+                  {isSearching && (
+                    <i className="fa-solid fa-circle-notch fa-spin absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
                   )}
                 </div>
 
-                {/* Suggestions Dropdown */}
-                {quickSuggestions.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-[#0c1322] border border-slate-800 rounded-2xl shadow-2xl overflow-hidden z-50 divide-y divide-slate-800/60">
-                    {quickSuggestions.map(item => {
+                {/* Suggestions automatiques TMDB */}
+                {quickResults.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-[#0d1424] border border-slate-800 rounded-2xl shadow-2xl overflow-hidden z-50 divide-y divide-slate-800/80">
+                    {quickResults.map(item => {
                       const title = item.title || item.name;
                       const year = (item.release_date || item.first_air_date || "").split("-")[0];
                       const poster = item.poster_path ? `${TMDB_IMG_URL}${item.poster_path}` : null;
                       return (
                         <div
                           key={item.id}
-                          onClick={() => handleAddTmdbWork(item)}
-                          className="flex items-center gap-3 p-3 hover:bg-slate-800/70 cursor-pointer transition"
+                          onClick={() => handleAddFromTmdb(item)}
+                          className="flex items-center gap-3 p-3 hover:bg-slate-800/60 cursor-pointer transition"
                         >
                           {poster ? (
                             <img src={poster} className="w-10 h-14 rounded-lg object-cover shadow" />
@@ -338,10 +367,10 @@
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
-                            <p className="text-white text-xs md:text-sm font-bold truncate">{title}</p>
-                            <p className="text-[11px] text-slate-400">{year} • {item.media_type === "tv" ? "Série / Animé" : "Film"}</p>
+                            <p className="text-white text-sm font-bold truncate">{title}</p>
+                            <p className="text-xs text-slate-400">{year} • {item.media_type === "tv" ? "Série / Animé" : "Film"}</p>
                           </div>
-                          <span className="text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-sky-500/20 text-sky-400 border border-sky-500/30">
+                          <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-sky-500/20 text-sky-400 border border-sky-500/30">
                             + Ajouter
                           </span>
                         </div>
@@ -351,382 +380,438 @@
                 )}
               </div>
 
-              {/* CHAT ICON & PROFILE SELECTION PILL */}
-              <div className="flex items-center gap-3" ref={profileDropdownRef}>
+              {/* Chat & Profil avec changement d'avatar */}
+              <div className="flex items-center gap-2 relative">
                 <button
                   onClick={() => setShowChatModal(true)}
-                  className="w-9 h-9 rounded-full bg-[#0c1220] border border-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:border-slate-700 transition"
+                  className="w-10 h-10 rounded-xl bg-[#0d1424] border border-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:border-slate-700 transition"
                   title="Discussion"
                 >
-                  <i className="fa-regular fa-comment text-sm"></i>
+                  <i className="fa-solid fa-comments text-sm"></i>
                 </button>
 
-                {/* Profile Pill Button */}
-                <div className="relative">
-                  <button
-                    onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                    className="flex items-center gap-2 bg-[#0c1220] hover:bg-slate-800/80 border border-slate-800 px-2.5 py-1.5 rounded-xl transition"
-                  >
-                    <img src={activeProfile.avatar} className="w-6 h-6 rounded-lg object-cover" />
-                    <span className="text-xs font-semibold text-white">{activeProfile.name}</span>
-                    <i className="fa-solid fa-chevron-down text-[9px] text-slate-400"></i>
-                  </button>
+                {/* Profil Actif */}
+                <div
+                  onClick={() => setShowProfileMenu(!showProfileMenu)}
+                  className="flex items-center gap-2.5 bg-[#0d1424] hover:bg-slate-800/60 border border-slate-800 px-3 py-1.5 rounded-xl cursor-pointer transition"
+                >
+                  <img src={currentProfile.avatar} className="w-7 h-7 rounded-lg object-cover bg-slate-800" />
+                  <span className="text-sm font-bold text-white">{currentProfile.name}</span>
+                  <i className="fa-solid fa-chevron-down text-[10px] text-slate-400"></i>
+                </div>
 
-                  {/* Profile Dropdown matching screenshot */}
-                  {showProfileDropdown && (
-                    <div className="absolute right-0 top-full mt-2 w-52 bg-[#0a101d] border border-slate-800/90 rounded-2xl shadow-2xl p-2 z-50">
-                      <div className="text-[10px] font-bold tracking-wider text-slate-400 px-3 py-1.5 uppercase">
-                        Changer de profil
+                {/* Menu déroulant profil */}
+                {showProfileMenu && (
+                  <div className="absolute top-full right-0 mt-2 w-52 bg-[#0d1424] border border-slate-800 rounded-2xl shadow-2xl p-2 z-50">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 py-1.5">CHANGER DE PROFIL</div>
+                    {profiles.map(p => (
+                      <div
+                        key={p.id}
+                        onClick={() => { setCurrentProfileId(p.id); setShowProfileMenu(false); }}
+                        className={`flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer text-xs font-semibold transition ${p.id === currentProfileId ? 'bg-sky-500/20 text-sky-400' : 'text-slate-300 hover:bg-slate-800'}`}
+                      >
+                        <div className="flex items-center gap-2.5 truncate">
+                          <img src={p.avatar} className="w-6 h-6 rounded-md object-cover" />
+                          <span className="truncate">{p.name}</span>
+                        </div>
+                        {p.id === currentProfileId && <i className="fa-solid fa-check text-xs"></i>}
                       </div>
-                      
-                      <div className="space-y-1">
-                        {profiles.map(p => {
-                          const isActive = p.id === activeProfileId;
-                          return (
-                            <div
-                              key={p.id}
-                              onClick={() => {
-                                setActiveProfileId(p.id);
-                                setShowProfileDropdown(false);
-                              }}
-                              className={`flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer text-xs font-semibold transition ${
-                                isActive ? 'bg-sky-950/80 text-sky-400 border border-sky-500/30' : 'text-slate-300 hover:bg-slate-800/60'
-                              }`}
-                            >
-                              <div className="flex items-center gap-2.5">
-                                <img src={p.avatar} className="w-6 h-6 rounded-md object-cover" />
-                                <span className="truncate">{p.name}</span>
-                              </div>
-                              {isActive && <i className="fa-solid fa-check text-[10px]"></i>}
-                            </div>
-                          );
-                        })}
+                    ))}
+                    
+                    <div className="border-t border-slate-800 mt-2 pt-2 space-y-1">
+                      {/* Option pour changer la photo de profil */}
+                      <div
+                        onClick={() => { setShowProfileMenu(false); handleChangeAvatar(); }}
+                        className="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer text-xs text-slate-300 hover:bg-slate-800 font-medium"
+                      >
+                        <i className="fa-solid fa-camera text-sky-400"></i>
+                        <span>Changer ma photo</span>
                       </div>
 
-                      <div className="border-t border-slate-800/80 mt-2 pt-2">
-                        <button
-                          onClick={() => {
-                            const name = prompt("Nom du nouveau profil :");
-                            if (name && name.trim()) {
-                              const newProfile = {
-                                id: "p_" + Date.now(),
-                                name: name.trim(),
-                                avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name.trim())}`
-                              };
-                              setProfiles(prev => [...prev, newProfile]);
-                              setActiveProfileId(newProfile.id);
-                              setShowProfileDropdown(false);
-                            }
-                          }}
-                          className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-slate-400 hover:text-white hover:bg-slate-800/60 transition"
-                        >
-                          <i className="fa-solid fa-plus text-[11px]"></i>
-                          <span>Créer un profil</span>
-                        </button>
+                      {/* Créer un profil */}
+                      <div
+                        onClick={() => {
+                          const name = prompt("Nom du nouveau profil :");
+                          if (name && name.trim()) {
+                            const newP = {
+                              id: "p_" + Date.now(),
+                              name: name.trim(),
+                              avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${name.trim()}`
+                            };
+                            setProfiles(prev => [...prev, newP]);
+                            setCurrentProfileId(newP.id);
+                            setShowProfileMenu(false);
+                          }
+                        }}
+                        className="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer text-xs text-slate-400 hover:text-white hover:bg-slate-800"
+                      >
+                        <i className="fa-solid fa-plus text-xs"></i>
+                        <span>Créer un profil</span>
                       </div>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
 
             </div>
           </header>
 
-          {}
+          {/* CORPS PRINCIPAL */}
           <main className="flex-1 max-w-7xl w-full mx-auto px-4 md:px-8 py-6">
 
-            {/* FIRST ROW: CATEGORY PILLS + RECOMMENDATIONS + SELECT BUTTON */}
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+            {/* Onglets Catégories + Bouton Recommandations fonctionnel */}
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
               <div className="flex flex-wrap items-center gap-2">
                 {[
                   { id: "Toutes", label: "Toutes", count: counts.total },
                   { id: "Films", label: "Films", count: counts.films },
                   { id: "Séries", label: "Séries", count: counts.series },
-                  { id: "Animés", label: "Animés", count: counts.animes }
+                  { id: "Animés", label: "Animés", count: counts.animes },
                 ].map(tab => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveCategory(tab.id)}
-                    className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
                       activeCategory === tab.id
-                        ? "bg-[#0f172a] text-sky-400 border border-sky-500/40"
-                        : "bg-[#0b101c] text-slate-400 hover:text-slate-200 border border-slate-800"
+                        ? "bg-[#141e34] text-sky-400 border border-sky-500/40 shadow-sm"
+                        : "bg-[#0d1424] text-slate-400 hover:text-white border border-slate-800/80"
                     }`}
                   >
                     <span>{tab.label}</span>
-                    <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
-                      activeCategory === tab.id ? 'bg-sky-500 text-slate-950' : 'bg-slate-800/80 text-slate-400'
-                    }`}>
+                    <span className={`px-2 py-0.5 rounded-md text-[10px] ${activeCategory === tab.id ? 'bg-sky-500 text-slate-950 font-black' : 'bg-slate-800 text-slate-400'}`}>
                       {tab.count}
                     </span>
                   </button>
                 ))}
 
-                {/* Bouton Recommandations */}
-                <button className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#0b101c] text-amber-400 border border-slate-800 hover:border-amber-400/30 transition">
-                  <span>✨</span>
+                {/* Le bouton ✨ Recommandations réparé */}
+                <button
+                  onClick={() => setActiveCategory("Recommandations")}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border transition ${
+                    activeCategory === "Recommandations"
+                      ? "bg-amber-500/20 text-amber-400 border-amber-400 shadow-lg shadow-amber-500/10"
+                      : "bg-[#0d1424] text-amber-400/90 border-slate-800 hover:border-amber-400/40"
+                  }`}
+                >
+                  <i className="fa-solid fa-wand-magic-sparkles text-amber-400"></i>
                   <span>Recommandations</span>
                 </button>
               </div>
 
-              {/* Bouton multi-sélection */}
-              <div className="flex items-center gap-2">
+              {/* Sélection groupée */}
+              {activeCategory !== "Recommandations" && (
                 <button
                   onClick={() => {
                     setIsSelectMode(!isSelectMode);
                     setSelectedIds([]);
                   }}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition ${
-                    isSelectMode
-                      ? "bg-sky-500 text-slate-950 border-sky-400"
-                      : "bg-[#0c1220] text-slate-300 border-slate-800 hover:border-slate-700"
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold border transition ${
+                    isSelectMode ? "bg-sky-500 text-slate-950 border-sky-400" : "bg-[#0d1424] text-slate-300 border-slate-800 hover:border-slate-700"
                   }`}
                 >
                   <i className="fa-solid fa-list-check mr-1.5"></i>
-                  {isSelectMode ? "Terminer sélection" : "Sélectionner"}
+                  {isSelectMode ? "Annuler sélection" : "Sélectionner"}
                 </button>
-              </div>
+              )}
             </div>
 
-            {/* SECOND ROW: SEARCH LIST + STATUS DROPDOWN + NEW SORTING DROPDOWN */}
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-6 bg-[#0b101c]/80 p-2.5 rounded-2xl border border-slate-800/80">
-              
-              {/* Champ de recherche dans la liste */}
-              <div className="relative flex-1 min-w-[220px] max-w-sm">
-                <i className="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
-                <input
-                  type="text"
-                  value={localFilterText}
-                  onChange={(e) => setLocalFilterText(e.target.value)}
-                  placeholder="Filtrer ma liste..."
-                  className="w-full bg-[#070b13] border border-slate-800 text-xs rounded-xl pl-8 pr-3 py-2 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500"
-                />
-              </div>
-
-              {/* Filtre de statut et Menu de tri */}
-              <div className="flex items-center gap-2 flex-wrap">
-                {/* Sélecteur de statut */}
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="bg-[#070b13] border border-slate-800 text-xs rounded-xl px-3 py-2 text-slate-300 focus:outline-none focus:border-sky-500"
-                >
-                  <option value="Tous les statuts">Tous les statuts</option>
-                  <option value="Terminé">Terminé</option>
-                  <option value="En cours">En cours</option>
-                  <option value="À voir / lire">À voir / lire</option>
-                </select>
-
-                {/* NOUVEAU : Menu de tri */}
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="bg-[#070b13] border border-slate-800 text-xs rounded-xl px-3 py-2 text-sky-400 font-semibold focus:outline-none focus:border-sky-500"
-                >
-                  <option value="date_desc">Trier : Ajout récent</option>
-                  <option value="release_desc">Trier : Sortie (récent)</option>
-                  <option value="release_asc">Trier : Sortie (ancien)</option>
-                  <option value="rating_desc">Trier : Note TMDB / Moyenne</option>
-                  <option value="title_asc">Trier : Titre (A à Z)</option>
-                </select>
-              </div>
-
-            </div>
-
-            {/* FLOATING ACTION BAR FOR BULK ACTIONS */}
-            {isSelectMode && (
-              <div className="mb-6 bg-[#0a101d] border border-sky-500/50 rounded-2xl p-3 flex items-center justify-between flex-wrap gap-2 shadow-xl">
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={handleToggleSelectAll}
-                    className="text-xs font-bold px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white transition"
-                  >
-                    {selectedIds.length === filteredWorks.length ? "Tout désélectionner" : "Tout sélectionner"}
-                  </button>
-                  <span className="text-xs font-semibold text-sky-400">
-                    {selectedIds.length} sélectionné(s) sur {filteredWorks.length}
-                  </span>
+            {/* VUE RECOMMANDATIONS */}
+            {activeCategory === "Recommandations" ? (
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className="text-base font-extrabold text-white flex items-center gap-2">
+                      <i className="fa-solid fa-sparkles text-amber-400"></i>
+                      Idées pour vous ({currentProfile.name})
+                    </h2>
+                    <p className="text-xs text-slate-400">Basé sur vos préférences et les œuvres populaires</p>
+                  </div>
                 </div>
 
-                {selectedIds.length > 0 && (
-                  <button
-                    onClick={handleBulkDelete}
-                    className="text-xs font-bold px-3 py-1.5 rounded-lg bg-rose-500/20 text-rose-400 border border-rose-500/40 hover:bg-rose-500 hover:text-white transition"
-                  >
-                    <i className="fa-solid fa-trash mr-1.5"></i>
-                    Supprimer la sélection ({selectedIds.length})
-                  </button>
+                {isLoadingRecs ? (
+                  <div className="flex justify-center py-20">
+                    <i className="fa-solid fa-circle-notch fa-spin text-3xl text-sky-400"></i>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                    {recommendations.map(item => {
+                      const title = item.title || item.name;
+                      const year = (item.release_date || item.first_air_date || "").split("-")[0];
+                      const poster = item.poster_path ? `${TMDB_IMG_URL}${item.poster_path}` : null;
+                      return (
+                        <div key={item.id} className="bg-[#0d1424] rounded-2xl overflow-hidden border border-slate-800 flex flex-col justify-between hover:border-sky-500/50 transition">
+                          <div className="aspect-[2/3] bg-slate-900 relative">
+                            {poster && <img src={poster} className="w-full h-full object-cover" />}
+                            <span className="absolute bottom-2 left-2 bg-[#090d16]/90 backdrop-blur-md text-amber-400 font-bold text-[10px] px-2 py-0.5 rounded border border-amber-400/20">
+                              ★ {item.vote_average?.toFixed(1) || 8.0}
+                            </span>
+                          </div>
+                          <div className="p-3">
+                            <h4 className="font-bold text-xs text-white line-clamp-1">{title}</h4>
+                            <p className="text-[10px] text-slate-400 mt-0.5">{year}</p>
+                            <button
+                              onClick={() => handleAddFromTmdb(item)}
+                              className="w-full mt-2 py-1.5 rounded-lg bg-sky-500/20 hover:bg-sky-500 hover:text-slate-950 text-sky-400 text-xs font-bold transition flex items-center justify-center gap-1"
+                            >
+                              <i className="fa-solid fa-plus text-[10px]"></i> Ajouter
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
-            )}
-
-            {}
-            {filteredWorks.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 text-center">
-                <div className="w-12 h-12 rounded-xl bg-[#0c1220] border border-slate-800 flex items-center justify-center mb-3 text-slate-500">
-                  <i className="fa-solid fa-film text-lg"></i>
-                </div>
-                <h3 className="text-sm font-bold text-white mb-1">Aucune œuvre dans cette vue</h3>
-                <p className="text-xs text-slate-400">Utilisez la barre du haut ⚡ pour en ajouter de nouvelles.</p>
-              </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                {filteredWorks.map(w => {
-                  const isSelected = selectedIds.includes(w.id);
-                  return (
-                    <div
-                      key={w.id}
-                      onClick={() => {
-                        if (isSelectMode) {
-                          setSelectedIds(prev => isSelected ? prev.filter(id => id !== w.id) : [...prev, w.id]);
-                        } else {
-                          setSelectedWorkModal(w);
-                        }
-                      }}
-                      className={`group relative bg-[#090e1a] rounded-2xl overflow-hidden border transition-all duration-300 cursor-pointer flex flex-col hover:-translate-y-1 hover:shadow-2xl ${
-                        isSelected ? 'border-sky-400 ring-2 ring-sky-400/40' : 'border-slate-800/80 hover:border-slate-700'
-                      }`}
+              /* VUE NORMALE (FILMS / SÉRIES / ANIMÉS) */
+              <div>
+                {/* Barre de filtres & Tri */}
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-6 bg-[#0d1424]/80 p-3 rounded-2xl border border-slate-800">
+                  <div className="relative flex-1 min-w-[200px] max-w-sm">
+                    <i className="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Filtrer ma liste..."
+                      className="w-full bg-[#060911] border border-slate-800 text-xs rounded-xl pl-8 pr-3 py-2 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <select
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                      className="bg-[#060911] border border-slate-800 text-xs rounded-xl px-3 py-2 text-slate-300 focus:outline-none"
                     >
-                      {/* Image Poster */}
-                      <div className="aspect-[2/3] w-full bg-slate-900 relative overflow-hidden">
-                        {w.poster ? (
-                          <img src={w.poster} alt={w.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-slate-600">
-                            <i className="fa-solid fa-image text-2xl"></i>
-                          </div>
-                        )}
+                      <option value="Tous les statuts">Tous les statuts</option>
+                      <option value="En cours">En cours</option>
+                      <option value="Terminé">Terminé</option>
+                      <option value="À voir / lire">À voir / lire</option>
+                    </select>
 
-                        {/* Mode sélection checkbox */}
-                        {isSelectMode && (
-                          <div className="absolute top-2 left-2 z-20">
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={() => {}}
-                              className="w-5 h-5 rounded text-sky-500 bg-slate-900 border-slate-700"
-                            />
-                          </div>
-                        )}
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                      className="bg-[#060911] border border-slate-800 text-xs rounded-xl px-3 py-2 text-sky-400 font-semibold focus:outline-none"
+                    >
+                      <option value="date_desc">Ajout récent</option>
+                      <option value="release_desc">Sortie : Plus récent</option>
+                      <option value="release_asc">Sortie : Plus ancien</option>
+                      <option value="rating_desc">Note TMDB / Moyenne</option>
+                      <option value="title_asc">Titre (A à Z)</option>
+                    </select>
+                  </div>
+                </div>
 
-                        {/* Top Left Badges: Film/Série + Status */}
-                        {!isSelectMode && (
-                          <div className="absolute top-2 left-2 flex items-center gap-1.5 z-10">
-                            <span className="bg-black/70 backdrop-blur-md text-[10px] font-bold text-slate-200 px-2 py-0.5 rounded-md border border-slate-700/50">
-                              <i className={`fa-solid ${w.category === 'Films' ? 'fa-film' : w.category === 'Animés' ? 'fa-sparkles' : 'fa-tv'} mr-1 text-[9px]`}></i>
-                              {w.category === 'Films' ? 'Film' : w.category === 'Animés' ? 'Animé' : 'Série'}
-                            </span>
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md backdrop-blur-md ${
-                              w.status === "Terminé" ? "bg-emerald-500 text-white" :
-                              w.status === "En cours" ? "bg-sky-500 text-white" : "bg-amber-500 text-slate-950"
-                            }`}>
-                              {w.status}
-                            </span>
-                          </div>
-                        )}
-
-                        {/* NOUVEAU : BOUTON POUBELLE DIRECTE AU SURVOL */}
-                        {!isSelectMode && (
-                          <button
-                            onClick={(e) => handleDirectDelete(e, w.id)}
-                            className="absolute top-2 right-2 w-7 h-7 rounded-lg bg-rose-950/80 border border-rose-500/50 text-rose-400 flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-rose-600 hover:text-white transition-all z-20 shadow-lg"
-                            title="Supprimer directement"
-                          >
-                            <i className="fa-solid fa-trash-can text-xs"></i>
-                          </button>
-                        )}
-
-                        {/* Bottom Left Star Badge */}
-                        <div className="absolute bottom-2 left-2 z-10">
-                          <span className="bg-[#060911]/90 backdrop-blur-md text-amber-400 font-extrabold text-[11px] px-2 py-0.5 rounded-md flex items-center gap-1 border border-amber-400/20">
-                            <i className="fa-solid fa-star text-[9px]"></i>
-                            {w.rating || w.tmdbRating || 8.0}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Card Content */}
-                      <div className="p-3 flex-1 flex flex-col justify-between">
-                        <div>
-                          <h4 className="font-bold text-white text-xs line-clamp-1 group-hover:text-sky-400 transition-colors">
-                            {w.title}
-                          </h4>
-                          <p className="text-[10px] text-slate-400 mt-0.5">
-                            {w.category} • {w.year}
-                          </p>
-                        </div>
-                      </div>
+                {/* Barre de sélection groupée */}
+                {isSelectMode && (
+                  <div className="sticky top-20 z-30 mb-6 bg-[#0d1424] border border-sky-500/40 rounded-2xl p-3 flex items-center justify-between shadow-2xl flex-wrap gap-2">
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => setSelectedIds(selectedIds.length === displayedWorks.length ? [] : displayedWorks.map(w => w.id))}
+                        className="text-xs font-bold px-3 py-1.5 rounded-lg bg-slate-800 text-white"
+                      >
+                        {selectedIds.length === displayedWorks.length ? "Tout désélectionner" : "Tout sélectionner"}
+                      </button>
+                      <span className="text-xs text-sky-400 font-semibold">{selectedIds.length} sélectionné(s)</span>
                     </div>
-                  );
-                })}
+
+                    {selectedIds.length > 0 && (
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            setWorks(prev => prev.map(w => selectedIds.includes(w.id) ? { ...w, status: "Terminé" } : w));
+                            setSelectedIds([]);
+                            setIsSelectMode(false);
+                          }}
+                          className="text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                        >
+                          Marquer Terminé
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm(`Supprimer ces ${selectedIds.length} œuvre(s) ?`)) {
+                              setWorks(prev => prev.filter(w => !selectedIds.includes(w.id)));
+                              setSelectedIds([]);
+                              setIsSelectMode(false);
+                            }
+                          }}
+                          className="text-xs font-bold px-3 py-1.5 rounded-lg bg-rose-500/20 text-rose-400 border border-rose-500/40 hover:bg-rose-500 hover:text-white transition"
+                        >
+                          <i className="fa-solid fa-trash mr-1"></i> Supprimer
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* GRILLE D'AFFICHES */}
+                {displayedWorks.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-20 text-center">
+                    <div className="w-14 h-14 rounded-2xl bg-[#0d1424] border border-slate-800 flex items-center justify-center mb-3 text-slate-500 text-xl">
+                      <i className="fa-solid fa-clapperboard"></i>
+                    </div>
+                    <h3 className="text-base font-bold text-white mb-1">Aucune œuvre trouvée</h3>
+                    <p className="text-xs text-slate-400">Ajoutez des films ou séries avec la barre du haut.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                    {displayedWorks.map(w => {
+                      const isSelected = selectedIds.includes(w.id);
+                      return (
+                        <div
+                          key={w.id}
+                          onClick={() => {
+                            if (isSelectMode) {
+                              setSelectedIds(prev => isSelected ? prev.filter(id => id !== w.id) : [...prev, w.id]);
+                            } else {
+                              setShowDetailModal(w);
+                            }
+                          }}
+                          className={`group relative bg-[#0d1424] rounded-2xl overflow-hidden border transition-all duration-300 cursor-pointer flex flex-col hover:-translate-y-1 hover:shadow-2xl ${
+                            isSelected ? 'border-sky-400 ring-2 ring-sky-400/50' : 'border-slate-800/80 hover:border-slate-600'
+                          }`}
+                        >
+                          <div className="aspect-[2/3] w-full bg-slate-900 relative overflow-hidden">
+                            {w.poster ? (
+                              <img src={w.poster} alt={w.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-slate-600">
+                                <i className="fa-solid fa-image text-3xl"></i>
+                              </div>
+                            )}
+
+                            {/* Checkbox de sélection */}
+                            {isSelectMode && (
+                              <div className="absolute top-2 left-2 z-20">
+                                <input type="checkbox" checked={isSelected} onChange={() => {}} className="w-5 h-5 rounded text-sky-500" />
+                              </div>
+                            )}
+
+                            {/* Badges statut & catégorie */}
+                            {!isSelectMode && (
+                              <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 z-10">
+                                <span className="bg-slate-950/80 backdrop-blur-md text-[10px] font-bold text-slate-200 px-2 py-0.5 rounded-md border border-slate-700/50">
+                                  {w.category === 'Films' ? 'Film' : w.category === 'Animés' ? 'Animé' : 'Série'}
+                                </span>
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md backdrop-blur-md ${
+                                  w.status === "Terminé" ? "bg-emerald-500/90 text-white" :
+                                  w.status === "En cours" ? "bg-sky-500/90 text-white" : "bg-amber-500/90 text-slate-950"
+                                }`}>
+                                  {w.status}
+                                </span>
+                              </div>
+                            )}
+
+                            {/* Suppression directe en un clic */}
+                            {!isSelectMode && (
+                              <button
+                                onClick={(e) => handleDeleteWork(e, w.id)}
+                                className="absolute top-2.5 right-2.5 w-7 h-7 rounded-lg bg-rose-950/80 border border-rose-500/50 text-rose-400 flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-rose-600 hover:text-white transition-all z-20 shadow-lg"
+                                title="Supprimer directement"
+                              >
+                                <i className="fa-solid fa-trash-can text-xs"></i>
+                              </button>
+                            )}
+
+                            {/* Note étoilée */}
+                            <div className="absolute bottom-2 left-2 z-10">
+                              <span className="bg-[#090d16]/90 backdrop-blur-md text-amber-400 font-extrabold text-[11px] px-2 py-0.5 rounded-md flex items-center gap-1 border border-amber-400/20">
+                                <i className="fa-solid fa-star text-[9px]"></i>
+                                {w.rating || w.tmdbRating || 8.0}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="p-3 flex-1 flex flex-col justify-between">
+                            <div>
+                              <h4 className="font-bold text-white text-xs line-clamp-1 group-hover:text-sky-400 transition-colors">
+                                {w.title}
+                              </h4>
+                              <p className="text-[10px] text-slate-400 mt-0.5">{w.category} • {w.year}</p>
+                            </div>
+
+                            {(w.category === "Séries" || w.category === "Animés") && (
+                              <div className="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-300">
+                                <span>S{w.currentSeason || 1} • Ép.{w.currentEpisode || 1}</span>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setWorks(prev => prev.map(item => item.id === w.id ? { ...item, currentEpisode: (item.currentEpisode || 1) + 1 } : item));
+                                  }}
+                                  className="px-2 py-0.5 rounded bg-slate-800 hover:bg-sky-500 hover:text-white text-slate-300 font-bold transition text-[10px]"
+                                >
+                                  +Ép
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
 
           </main>
 
-          {}
-          {selectedWorkModal && (
-            <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-              <div className="bg-[#090e1a] border border-slate-800 rounded-3xl max-w-2xl w-full p-6 shadow-2xl relative my-6 text-slate-200">
-                
-                {/* Close Cross */}
-                <button
-                  onClick={() => setSelectedWorkModal(null)}
-                  className="absolute top-5 right-5 text-slate-400 hover:text-white text-lg z-10"
-                >
+          {/* FICHE DÉTAILLÉE MODALE (Exact Base44) */}
+          {showDetailModal && (
+            <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+              <div className="bg-[#0d1424] border border-slate-800 rounded-3xl max-w-2xl w-full p-6 shadow-2xl relative my-6 text-slate-200">
+                <button onClick={() => setShowDetailModal(null)} className="absolute top-5 right-5 text-slate-400 hover:text-white text-lg">
                   <i className="fa-solid fa-xmark"></i>
                 </button>
 
                 <div className="flex flex-col sm:flex-row gap-6">
-                  {/* Left Column: Poster + Où regarder */}
+                  {/* Affiche & VOD */}
                   <div className="w-full sm:w-44 flex-shrink-0">
-                    <img src={selectedWorkModal.poster} className="w-full rounded-2xl shadow-xl border border-slate-800 aspect-[2/3] object-cover" />
+                    <img src={showDetailModal.poster} className="w-full rounded-2xl shadow-xl border border-slate-800 aspect-[2/3] object-cover" />
                     
                     <div className="mt-3">
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">OÙ REGARDER</span>
                       <div className="flex flex-wrap gap-1">
-                        {selectedWorkModal.providers?.map(pr => (
-                          <span key={pr} className="text-[10px] bg-[#0f172a] border border-slate-800 px-2 py-0.5 rounded text-slate-300">
-                            {pr}
-                          </span>
+                        {showDetailModal.providers?.map(pr => (
+                          <span key={pr} className="text-[10px] bg-[#141e34] border border-slate-800 px-2 py-0.5 rounded text-slate-300">{pr}</span>
                         ))}
                       </div>
                     </div>
                   </div>
 
-                  {/* Right Column: Information, Synopsis, Status and Ratings */}
+                  {/* Détails */}
                   <div className="flex-1 flex flex-col justify-between">
                     <div>
-                      {/* Header */}
                       <div className="flex items-center justify-between">
                         <div>
-                          <h3 className="text-xl font-black text-white">{selectedWorkModal.title}</h3>
-                          <p className="text-xs text-slate-400 mt-0.5">{selectedWorkModal.category} • {selectedWorkModal.year}</p>
+                          <h3 className="text-xl font-black text-white">{showDetailModal.title}</h3>
+                          <p className="text-xs text-slate-400 mt-0.5">{showDetailModal.category} • {showDetailModal.year}</p>
                         </div>
                         <span className="bg-amber-400/20 text-amber-400 border border-amber-400/30 text-xs font-bold px-2 py-1 rounded-md">
-                          ★ {selectedWorkModal.rating || selectedWorkModal.tmdbRating || 8.0}/10
+                          ★ {showDetailModal.rating || showDetailModal.tmdbRating || 8.0}/10
                         </span>
                       </div>
 
-                      {/* Synopsis with Yellow Left Border indicator */}
+                      {/* SYNOPSIS avec liseré jaune exact */}
                       <div className="mt-4 border-l-2 border-amber-400 pl-3">
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">SYNOPSIS</span>
-                        <p className="text-xs text-slate-300 mt-1 max-h-24 overflow-y-auto custom-scroll leading-relaxed">
-                          {selectedWorkModal.synopsis}
+                        <p className="text-xs text-slate-300 mt-1 max-h-24 overflow-y-auto custom-scrollbar leading-relaxed">
+                          {showDetailModal.synopsis}
                         </p>
                       </div>
 
-                      {/* Status Selector */}
+                      {/* Statut */}
                       <div className="mt-4">
                         <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">Statut *</label>
                         <select
-                          value={selectedWorkModal.status}
+                          value={showDetailModal.status}
                           onChange={(e) => {
-                            const updated = { ...selectedWorkModal, status: e.target.value };
-                            setSelectedWorkModal(updated);
+                            const updated = { ...showDetailModal, status: e.target.value };
+                            setShowDetailModal(updated);
                             setWorks(prev => prev.map(w => w.id === updated.id ? updated : w));
                           }}
-                          className="w-full bg-[#060911] border border-slate-800 text-xs rounded-xl px-3 py-2 text-white focus:outline-none focus:border-sky-500"
+                          className="w-full bg-[#060911] border border-slate-800 text-xs rounded-xl px-3 py-2 text-white focus:outline-none"
                         >
                           <option value="À voir / lire">À voir / lire</option>
                           <option value="En cours">En cours</option>
@@ -734,16 +819,16 @@
                         </select>
                       </div>
 
-                      {/* CRITIQUE : « JE LIS LE MANGA » APPARAÎT UNIQUEMENT SI C'EST UN ANIMÉ */}
-                      {selectedWorkModal.category === "Animés" && (
+                      {/* « JE LIS LE MANGA » S'AFFICHE STRICTEMENT EN CAS D'ANIMÉ */}
+                      {showDetailModal.category === "Animés" && (
                         <div className="mt-3 bg-[#060911] p-3 rounded-xl border border-slate-800 flex items-center justify-between">
                           <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-200">
                             <input
                               type="checkbox"
-                              checked={!!selectedWorkModal.mangaTracking}
+                              checked={!!showDetailModal.mangaTracking}
                               onChange={(e) => {
-                                const updated = { ...selectedWorkModal, mangaTracking: e.target.checked };
-                                setSelectedWorkModal(updated);
+                                const updated = { ...showDetailModal, mangaTracking: e.target.checked };
+                                setShowDetailModal(updated);
                                 setWorks(prev => prev.map(w => w.id === updated.id ? updated : w));
                               }}
                               className="w-4 h-4 rounded text-sky-500 bg-slate-900 border-slate-700"
@@ -751,37 +836,37 @@
                             <span>Je lis le manga</span>
                           </label>
 
-                          {selectedWorkModal.mangaTracking && (
+                          {showDetailModal.mangaTracking && (
                             <div className="flex items-center gap-2">
                               <span className="text-[10px] text-slate-400">Chapitre</span>
                               <input
                                 type="number"
                                 min="1"
-                                value={selectedWorkModal.mangaChapter || 1}
+                                value={showDetailModal.mangaChapter || 1}
                                 onChange={(e) => {
-                                  const updated = { ...selectedWorkModal, mangaChapter: parseInt(e.target.value) || 1 };
-                                  setSelectedWorkModal(updated);
+                                  const updated = { ...showDetailModal, mangaChapter: parseInt(e.target.value) || 1 };
+                                  setShowDetailModal(updated);
                                   setWorks(prev => prev.map(w => w.id === updated.id ? updated : w));
                                 }}
-                                className="w-16 bg-[#0c1220] border border-slate-700 rounded-lg p-1 text-xs text-white text-center font-bold"
+                                className="w-16 bg-[#0d1424] border border-slate-700 rounded-lg p-1 text-xs text-white text-center font-bold"
                               />
                             </div>
                           )}
                         </div>
                       )}
 
-                      {/* Suivi épisodes si Série ou Animé */}
-                      {(selectedWorkModal.category === "Séries" || selectedWorkModal.category === "Animés") && (
+                      {/* Saisons / Épisodes */}
+                      {(showDetailModal.category === "Séries" || showDetailModal.category === "Animés") && (
                         <div className="grid grid-cols-2 gap-3 mt-3">
                           <div>
                             <label className="text-[10px] font-bold text-slate-400 uppercase">Saison actuelle</label>
                             <input
                               type="number"
                               min="1"
-                              value={selectedWorkModal.currentSeason || 1}
+                              value={showDetailModal.currentSeason || 1}
                               onChange={(e) => {
-                                const updated = { ...selectedWorkModal, currentSeason: parseInt(e.target.value) || 1 };
-                                setSelectedWorkModal(updated);
+                                const updated = { ...showDetailModal, currentSeason: parseInt(e.target.value) || 1 };
+                                setShowDetailModal(updated);
                                 setWorks(prev => prev.map(w => w.id === updated.id ? updated : w));
                               }}
                               className="w-full bg-[#060911] border border-slate-800 rounded-xl p-2 text-xs text-white"
@@ -792,10 +877,10 @@
                             <input
                               type="number"
                               min="1"
-                              value={selectedWorkModal.currentEpisode || 1}
+                              value={showDetailModal.currentEpisode || 1}
                               onChange={(e) => {
-                                const updated = { ...selectedWorkModal, currentEpisode: parseInt(e.target.value) || 1 };
-                                setSelectedWorkModal(updated);
+                                const updated = { ...showDetailModal, currentEpisode: parseInt(e.target.value) || 1 };
+                                setShowDetailModal(updated);
                                 setWorks(prev => prev.map(w => w.id === updated.id ? updated : w));
                               }}
                               className="w-full bg-[#060911] border border-slate-800 rounded-xl p-2 text-xs text-white"
@@ -805,11 +890,11 @@
                       )}
                     </div>
 
-                    {/* Detailed Ratings Section */}
+                    {/* NOTES DÉTAILLÉES (Moyenne auto) */}
                     <div className="mt-5 pt-4 border-t border-slate-800">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-[11px] font-bold uppercase tracking-wider text-slate-300">NOTES DÉTAILLÉES</span>
-                        <span className="text-amber-400 font-extrabold text-xs">Moyenne : {selectedWorkModal.rating || 8}/10</span>
+                        <span className="text-amber-400 font-extrabold text-xs">Moyenne : {showDetailModal.rating || 8}/10</span>
                       </div>
 
                       <div className="grid grid-cols-5 gap-2">
@@ -823,14 +908,14 @@
                           <div key={crit.key} className="bg-[#060911] p-2 rounded-xl border border-slate-800 text-center">
                             <span className="text-[9px] text-slate-400 block truncate">{crit.label}</span>
                             <select
-                              value={selectedWorkModal.detailedRating?.[crit.key] || 8}
+                              value={showDetailModal.detailedRating?.[crit.key] || 8}
                               onChange={(e) => {
                                 const val = parseFloat(e.target.value);
-                                const newDetails = { ...(selectedWorkModal.detailedRating || {}), [crit.key]: val };
+                                const newDetails = { ...(showDetailModal.detailedRating || {}), [crit.key]: val };
                                 const values = Object.values(newDetails);
                                 const avg = (values.reduce((a, b) => a + b, 0) / values.length).toFixed(1);
-                                const updated = { ...selectedWorkModal, detailedRating: newDetails, rating: parseFloat(avg) };
-                                setSelectedWorkModal(updated);
+                                const updated = { ...showDetailModal, detailedRating: newDetails, rating: parseFloat(avg) };
+                                setShowDetailModal(updated);
                                 setWorks(prev => prev.map(w => w.id === updated.id ? updated : w));
                               }}
                               className="w-full bg-transparent text-center font-bold text-xs text-white mt-1 focus:outline-none"
@@ -844,12 +929,14 @@
                       </div>
                     </div>
 
-                    {/* Bottom Actions */}
+                    {/* Actions de fin */}
                     <div className="mt-5 pt-3 border-t border-slate-800 flex items-center justify-between">
                       <button
                         onClick={() => {
-                          setWorks(prev => prev.filter(w => w.id !== selectedWorkModal.id));
-                          setSelectedWorkModal(null);
+                          if (confirm("Supprimer cette œuvre de votre liste ?")) {
+                            setWorks(prev => prev.filter(w => w.id !== showDetailModal.id));
+                            setShowDetailModal(null);
+                          }
                         }}
                         className="text-xs text-rose-500 hover:text-rose-400 font-semibold"
                       >
@@ -857,7 +944,7 @@
                       </button>
 
                       <button
-                        onClick={() => setSelectedWorkModal(null)}
+                        onClick={() => setShowDetailModal(null)}
                         className="px-5 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs transition"
                       >
                         Enregistrer
@@ -870,13 +957,13 @@
             </div>
           )}
 
-          {}
+          {/* DISCUSSION / TCHAT INTER-PROFILS */}
           {showChatModal && (
-            <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-              <div className="bg-[#090e1a] border border-slate-800 rounded-3xl max-w-lg w-full h-[500px] shadow-2xl flex flex-col overflow-hidden">
+            <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-[#0d1424] border border-slate-800 rounded-3xl max-w-lg w-full h-[520px] shadow-2xl flex flex-col overflow-hidden relative">
                 <div className="p-4 border-b border-slate-800 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <i className="fa-regular fa-comment text-sky-400"></i>
+                    <i className="fa-solid fa-comments text-sky-400"></i>
                     <h3 className="font-bold text-white text-sm">Discussion entre profils</h3>
                   </div>
                   <button onClick={() => setShowChatModal(false)} className="text-slate-400 hover:text-white">
@@ -884,13 +971,13 @@
                   </button>
                 </div>
 
-                <div className="flex-1 p-4 overflow-y-auto space-y-3 custom-scroll">
+                <div className="flex-1 p-4 overflow-y-auto space-y-3 custom-scrollbar">
                   {chatMessages.map(m => {
-                    const isMe = m.senderId === activeProfileId;
+                    const isMe = m.senderId === currentProfileId;
                     return (
                       <div key={m.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                        <span className="text-[10px] text-slate-500 mb-0.5">{m.senderName} • {m.time}</span>
-                        <div className={`p-2.5 rounded-2xl text-xs max-w-[80%] ${isMe ? 'bg-sky-500 text-slate-950 font-semibold' : 'bg-slate-800 text-slate-200'}`}>
+                        <span className="text-[10px] text-slate-500 mb-1">{m.senderName}</span>
+                        <div className={`p-3 rounded-2xl text-xs max-w-[80%] ${isMe ? 'bg-sky-500 text-slate-950 font-medium' : 'bg-slate-800 text-slate-200'}`}>
                           {m.text}
                         </div>
                       </div>
@@ -903,14 +990,12 @@
                     e.preventDefault();
                     const input = e.target.elements.msg;
                     if (input.value.trim()) {
-                      const now = new Date();
-                      const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
                       const newMsg = {
                         id: "m_" + Date.now(),
-                        senderId: activeProfileId,
-                        senderName: activeProfile.name,
+                        senderId: currentProfileId,
+                        senderName: currentProfile.name,
                         text: input.value.trim(),
-                        time: timeStr
+                        timestamp: Date.now()
                       };
                       setChatMessages(prev => [...prev, newMsg]);
                       input.value = "";
@@ -922,7 +1007,7 @@
                     name="msg"
                     type="text"
                     placeholder="Écrivez un message..."
-                    className="flex-1 bg-[#060911] border border-slate-800 text-xs rounded-xl px-3 py-2 text-white focus:outline-none focus:border-sky-500"
+                    className="flex-1 bg-[#060911] border border-slate-800 text-xs rounded-xl px-3 py-2 text-white focus:outline-none"
                   />
                   <button type="submit" className="px-4 py-2 rounded-xl bg-sky-500 text-slate-950 text-xs font-bold">
                     <i className="fa-solid fa-paper-plane"></i>
